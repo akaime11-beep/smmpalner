@@ -2,12 +2,17 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>SMM Flow - Авторизация ВК</title>
+    <title>SMM Flow - Управление</title>
+    <!-- Мета-тег для обхода блокировок безопасности браузером -->
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob:; style-src * 'unsafe-inline';">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Подключение твоих ключей -->
     <script src="config.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
         .active-tab { color: #2563eb; background-color: #eff6ff; border-right: 3px solid #2563eb; }
@@ -17,121 +22,152 @@
 <body class="flex h-screen overflow-hidden">
 
     <!-- Боковое меню -->
-    <aside class="w-64 bg-white border-r flex flex-col">
-        <div class="p-6 border-b font-bold text-xl text-blue-600 flex items-center">
-            <i class="fa fa-paper-plane mr-2"></i> SMM Flow
+    <aside class="w-64 bg-white border-r flex flex-col z-20">
+        <div class="p-6 flex items-center space-x-3 border-b">
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg">
+                <i class="fa fa-paper-plane"></i>
+            </div>
+            <span class="font-bold text-lg">SMM Flow</span>
         </div>
         <nav class="flex-1 py-4">
-            <button onclick="switchTab('content')" id="nav-content" class="w-full flex items-center px-6 py-3 text-sm active-tab">
+            <button onclick="switchTab('content')" id="nav-content" class="w-full flex items-center px-6 py-3 text-sm font-medium transition active-tab">
                 <i class="fa fa-layer-group w-8"></i> Контент
             </button>
-            <button onclick="switchTab('accounts')" id="nav-accounts" class="w-full flex items-center px-6 py-3 text-sm text-gray-500 hover:bg-gray-50">
+            <button onclick="switchTab('accounts')" id="nav-accounts" class="w-full flex items-center px-6 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 transition">
                 <i class="fa fa-link w-8"></i> Аккаунты
             </button>
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col">
+    <!-- Основной контент -->
+    <div class="flex-1 flex flex-col relative">
         <header class="h-16 bg-white border-b flex items-center justify-between px-8">
-            <div id="status-text" class="text-sm font-semibold text-gray-400 italic">Загрузка системы...</div>
-            <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-blue-700 transition">+ Создать пост</button>
+            <div id="status-text" class="text-sm font-semibold text-gray-400 italic">Синхронизация...</div>
+            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition">
+                + Создать пост
+            </button>
         </header>
 
-        <!-- ВКЛАДКА КОНТЕНТ -->
-        <section id="view-content" class="p-8 overflow-y-auto bg-gray-50 flex-1">
-            <div id="post-feed" class="max-w-2xl mx-auto space-y-4"></div>
-        </section>
+        <!-- Вкладка: Контент (Посты) -->
+        <main id="view-content" class="flex-1 p-8 overflow-y-auto bg-gray-50">
+            <div id="post-feed" class="max-w-2xl mx-auto space-y-4">
+                <!-- Сюда подгружаются посты -->
+            </div>
+        </main>
 
-        <!-- ВКЛАДКА АККАУНТЫ -->
-        <section id="view-accounts" class="hidden p-8 flex-1">
+        <!-- Вкладка: Аккаунты -->
+        <main id="view-accounts" class="hidden flex-1 p-8">
             <div class="max-w-md mx-auto bg-white p-8 rounded-2xl border shadow-sm text-center">
                 <i class="fab fa-vk text-5xl text-blue-600 mb-4"></i>
                 <h2 class="text-xl font-bold mb-4">Подключение ВКонтакте</h2>
                 
                 <div id="vk-auth-section">
                     <button onclick="startVKAuth()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">
-                        1. Войти через ВК
+                        Шаг 1. Войти через ВК
                     </button>
                 </div>
 
                 <div id="group-select-section" class="hidden mt-4 space-y-4">
-                    <p class="text-sm text-gray-500 text-left">Выберите группу для постинга:</p>
-                    <select id="vk-group-list" class="w-full border p-3 rounded-xl outline-none"></select>
+                    <p class="text-sm text-gray-500 text-left font-medium text-center">Выберите сообщество для работы:</p>
+                    <select id="vk-group-list" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"></select>
                     <button onclick="saveSelectedGroup()" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600 transition">
-                        2. Подтвердить выбор
+                        Шаг 2. Подтвердить выбор
                     </button>
                 </div>
 
-                <div id="account-status" class="mt-6 text-sm font-medium text-gray-400"></div>
+                <div id="account-status" class="mt-6"></div>
             </div>
-        </section>
-    </main>
+        </main>
+    </div>
 
-    <!-- Модалка создания поста (сокращенная версия) -->
+    <!-- Модальное окно создания поста -->
     <div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg p-8 shadow-2xl">
-            <h3 class="text-xl font-bold mb-4">Новый пост</h3>
-            <textarea id="post-text" class="w-full h-32 border rounded-xl p-4 mb-4 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ваш текст..."></textarea>
-            <input type="datetime-local" id="post-date" class="w-full border rounded-xl p-3 mb-6 outline-none">
+            <h3 class="text-xl font-bold mb-4">Новая публикация</h3>
+            <textarea id="post-text" class="w-full h-32 border border-gray-200 rounded-xl p-4 mb-4 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Напишите что-нибудь интересное..."></textarea>
+            
+            <div class="mb-6">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Время публикации</label>
+                <input type="datetime-local" id="post-date" class="w-full border rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
             <div class="flex space-x-3">
                 <button onclick="closeModal()" class="flex-1 bg-gray-100 py-3 rounded-xl font-bold">Отмена</button>
-                <button onclick="savePost()" id="save-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">Запланировать</button>
+                <button onclick="savePost()" id="save-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-blue-200">Запланировать</button>
             </div>
         </div>
     </div>
 
     <script>
         let supabaseClient;
-        let tempToken = '';
+        let tempAccessToken = '';
+
+        // Прямой адрес вашего сайта для ВК
+        const REDIRECT_URI = 'https://akaime11-beep.github.io/smmpalner/';
 
         window.onload = function() {
-            if (typeof S_URL === 'undefined') return;
+            if (typeof S_URL === 'undefined') {
+                document.getElementById('status-text').innerText = "Ошибка: config.js не найден ❌";
+                return;
+            }
+            
             supabaseClient = supabase.createClient(S_URL, S_KEY);
-            handleAuthCallback(); // Проверяем, вернулись ли мы из ВК
-            checkExistingAccount();
+            
+            // Проверяем, есть ли токен в адресе (вернулись из ВК)
+            handleVKCallback();
+            
+            // Проверяем, есть ли уже подключенный аккаунт
+            checkAccountStatus();
+            
+            // Загружаем ленту
             fetchPosts();
         };
 
         // --- ЛОГИКА ВК ---
 
         function startVKAuth() {
-            const redirectUri = window.location.origin + window.location.pathname;
+            // Формируем ссылку строго по правилам ВК
             const scope = 'groups,wall,offline,admin';
-            const authUrl = `https://oauth.vk.com/authorize?client_id=${VK_APP_ID}&display=page&redirect_uri=${redirectUri}&scope=${scope}&response_type=token&v=5.131`;
+            const authUrl = `https://oauth.vk.com/authorize?client_id=${VK_APP_ID}&display=page&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scope}&response_type=token&v=5.131`;
+            
             window.location.href = authUrl;
         }
 
-        async function handleAuthCallback() {
+        async function handleVKCallback() {
             const hash = window.location.hash;
             if (hash.includes('access_token')) {
                 const params = new URLSearchParams(hash.replace('#', '?'));
-                tempToken = params.get('access_token');
-                window.location.hash = ''; // Чистим адресную строку
-                loadAdminGroups();
+                tempAccessToken = params.get('access_token');
+                
+                // Скрываем хэш из адресной строки
+                window.history.replaceState(null, null, window.location.pathname);
+                
+                // Переходим к выбору групп
+                loadGroups();
             }
         }
 
-        async function loadAdminGroups() {
+        function loadGroups() {
             document.getElementById('vk-auth-section').classList.add('hidden');
             document.getElementById('group-select-section').classList.remove('hidden');
             
-            // Используем JSONP для обхода CORS (особенность ВК для браузеров)
+            // Запрашиваем список групп пользователя через JSONP (чтобы не было ошибок доступа)
             const script = document.createElement('script');
-            script.src = `https://api.vk.com/method/groups.get?extended=1&filter=admin&access_token=${tempToken}&v=5.131&callback=vkCallback`;
+            script.src = `https://api.vk.com/method/groups.get?extended=1&filter=admin&access_token=${tempAccessToken}&v=5.131&callback=vkJsonpCallback`;
             document.body.appendChild(script);
         }
 
-        window.vkCallback = function(response) {
+        window.vkJsonpCallback = function(data) {
             const select = document.getElementById('vk-group-list');
-            if (response.response && response.response.items) {
-                response.response.items.forEach(group => {
-                    const opt = document.createElement('option');
-                    opt.value = group.id;
-                    opt.text = group.name;
-                    select.add(opt);
+            if (data.response && data.response.items) {
+                data.response.items.forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group.id;
+                    option.text = group.name;
+                    select.add(option);
                 });
             } else {
-                alert("Не удалось загрузить список групп. Убедитесь, что вы админ.");
+                alert("Не удалось найти группы, где вы администратор.");
             }
         };
 
@@ -142,63 +178,107 @@
 
             const { error } = await supabaseClient.from('accounts').upsert({
                 platform: 'vk',
-                access_token: tempToken,
+                access_token: tempAccessToken,
                 account_name: groupName,
-                external_id: '-' + groupId // Сохраняем сразу с минусом для ВК
+                external_id: '-' + groupId // Сразу добавляем минус для корректного постинга в ВК
             }, { onConflict: 'platform' });
 
             if (!error) {
-                alert("Аккаунт успешно привязан!");
+                alert("Сообщество успешно привязано!");
                 location.reload();
             } else {
                 alert("Ошибка БД: " + error.message);
             }
         }
 
-        async function checkExistingAccount() {
+        async function checkAccountStatus() {
             const { data } = await supabaseClient.from('accounts').select('*').eq('platform', 'vk').single();
             if (data) {
-                document.getElementById('account-status').innerHTML = 
-                    `<div class="p-3 bg-green-50 text-green-700 rounded-lg border border-green-200">
-                        ✅ Подключено сообщество: <br><strong>${data.account_name}</strong>
-                     </div>`;
-                document.getElementById('vk-auth-section').innerHTML = 
-                    `<button onclick="startVKAuth()" class="w-full border border-blue-200 text-blue-600 py-2 rounded-xl text-sm">Сменить аккаунт</button>`;
+                document.getElementById('account-status').innerHTML = `
+                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <p class="text-xs text-blue-400 font-bold uppercase mb-1">Активный аккаунт</p>
+                        <p class="font-bold text-blue-800">${data.account_name}</p>
+                    </div>
+                `;
+                document.getElementById('vk-auth-section').innerHTML = `
+                    <button onclick="startVKAuth()" class="w-full border-2 border-blue-100 text-blue-600 py-2 rounded-xl text-sm font-bold hover:bg-blue-50 transition">
+                        Сменить сообщество
+                    </button>
+                `;
             }
             document.getElementById('status-text').innerText = "Система онлайн ✅";
         }
 
-        // --- СТАНДАРТНЫЕ ФУНКЦИИ ---
+        // --- УПРАВЛЕНИЕ ПОСТАМИ ---
+
+        async function fetchPosts() {
+            const { data, error } = await supabaseClient.from('posts').select('*').order('publish_date', { ascending: false });
+            const feed = document.getElementById('post-feed');
+            
+            if (error) {
+                feed.innerHTML = "Ошибка загрузки ленты.";
+                return;
+            }
+
+            feed.innerHTML = data.length ? '' : '<p class="text-center text-gray-400 mt-10">Постов еще нет. Создайте первый!</p>';
+            
+            data.forEach(post => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm text-left mb-4";
+                card.innerHTML = `
+                    <div class="flex justify-between mb-2 text-[10px] font-bold uppercase">
+                        <span class="text-blue-500"><i class="fab fa-vk"></i> ВК</span>
+                        <span class="text-gray-400">${new Date(post.publish_date).toLocaleString()}</span>
+                    </div>
+                    <p class="text-gray-700 text-sm leading-relaxed">${post.text}</p>
+                    <div class="mt-3">
+                        <span class="text-[9px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">${post.status}</span>
+                    </div>
+                `;
+                feed.appendChild(card);
+            });
+        }
+
+        async function savePost() {
+            const btn = document.getElementById('save-btn');
+            const text = document.getElementById('post-text').value;
+            const date = document.getElementById('post-date').value;
+
+            if (!text || !date) return alert("Заполните текст и дату!");
+
+            btn.innerText = "Сохраняю...";
+            btn.disabled = true;
+
+            const { error } = await supabaseClient.from('posts').insert([{
+                text: text,
+                publish_date: date,
+                platform: 'vk',
+                status: 'planned'
+            }]);
+
+            if (!error) {
+                closeModal();
+                fetchPosts();
+                document.getElementById('post-text').value = '';
+            } else {
+                alert("Ошибка: " + error.message);
+            }
+            btn.innerText = "Запланировать";
+            btn.disabled = false;
+        }
+
+        // --- ИНТЕРФЕЙС ---
+
         function switchTab(tab) {
             document.getElementById('view-content').classList.toggle('hidden', tab !== 'content');
             document.getElementById('view-accounts').classList.toggle('hidden', tab !== 'accounts');
             document.getElementById('nav-content').classList.toggle('active-tab', tab === 'content');
             document.getElementById('nav-accounts').classList.toggle('active-tab', tab === 'accounts');
         }
+
         function openModal() { document.getElementById('modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
-        async function fetchPosts() {
-            const { data, error } = await supabaseClient.from('posts').select('*').order('publish_date', { ascending: false });
-            if (!error) {
-                const feed = document.getElementById('post-feed');
-                feed.innerHTML = data.length ? '' : '<p class="text-center text-gray-400 mt-10 text-sm italic">Постов пока нет. Нажмите «Создать пост».</p>';
-                data.forEach(post => {
-                    const card = document.createElement('div');
-                    card.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm text-left mb-4";
-                    card.innerHTML = `<div class="flex justify-between mb-2 text-[10px] font-bold uppercase"><span class="text-blue-500">${post.platform}</span><span class="text-gray-400">${new Date(post.publish_date).toLocaleString()}</span></div><p class="text-gray-700 text-sm">${post.text}</p><div class="mt-3 text-[10px] bg-orange-50 text-orange-600 px-2 py-1 rounded inline-block font-bold">${post.status}</div>`;
-                    feed.appendChild(card);
-                });
-            }
-        }
-
-        async function savePost() {
-            const txt = document.getElementById('post-text').value;
-            const date = document.getElementById('post-date').value;
-            if (!txt || !date) return alert("Заполни все!");
-            const { error } = await supabaseClient.from('posts').insert([{ text: txt, publish_date: date, platform: 'vk', status: 'planned' }]);
-            if (!error) { closeModal(); fetchPosts(); }
-        }
     </script>
 </body>
 </html>
