@@ -151,4 +151,93 @@
                 });
                 // Показываем выбор группы
                 document.getElementById('group-select-section').classList.remove('hidden');
-                document.getElementById('status-text').innerText = "Выберите
+                document.getElementById('status-text').innerText = "Выберите группу ✅";
+            } else {
+                alert("У вас нет сообществ, в которых вы являетесь Администратором.");
+                document.getElementById('vk-onetap-container').classList.remove('hidden');
+                document.getElementById('status-text').innerText = "Группы не найдены ❌";
+            }
+        };
+
+        async function saveSelectedGroup() {
+            const select = document.getElementById('vk-group-list');
+            if (!select.value) return;
+
+            const { error } = await supabaseClient.from('accounts').upsert({
+                platform: 'vk',
+                access_token: tempAccessToken,
+                account_name: select.options[select.selectedIndex].text,
+                external_id: '-' + select.value
+            }, { onConflict: 'platform' });
+
+            if (!error) {
+                alert("Успешно привязано!");
+                location.reload();
+            } else {
+                alert("Ошибка сохранения: " + error.message);
+            }
+        }
+
+        async function checkAccountStatus() {
+            const badge = document.getElementById('vk-status-badge');
+            try {
+                const { data } = await supabaseClient.from('accounts').select('*').eq('platform', 'vk').maybeSingle();
+                if (data) {
+                    badge.innerHTML = `<span class="badge-green">ПОДКЛЮЧЕНО</span> <div class="text-[10px] text-gray-500 mt-1">${data.account_name}</div>`;
+                    document.getElementById('vk-onetap-container').innerHTML = `<p class="text-[10px] text-gray-400">Аккаунт привязан. Чтобы сменить, авторизуйтесь снова.</p>`;
+                } else {
+                    badge.innerHTML = `<span class="text-xs text-gray-400 italic">Не авторизовано</span>`;
+                }
+            } catch(e) { console.log("База не отвечает"); }
+            document.getElementById('status-text').innerText = "Система онлайн ✅";
+        }
+
+        async function fetchPosts() {
+            const { data, error } = await supabaseClient.from('posts').select('*').order('publish_date', { ascending: false });
+            const feed = document.getElementById('post-feed');
+            if (error) return;
+            feed.innerHTML = data.length ? '' : '<div class="text-center py-20 text-gray-300 italic">Пока нет публикаций</div>';
+            data.forEach(p => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-left mb-4 relative";
+                card.innerHTML = `
+                    <div class="flex justify-between mb-2 text-[10px] font-bold uppercase">
+                        <span class="text-blue-500 font-bold"><i class="fab fa-vk"></i> ВКонтакте</span>
+                        <span class="text-gray-400 font-medium">${new Date(p.publish_date).toLocaleString()}</span>
+                    </div>
+                    <p class="text-gray-700 text-sm leading-relaxed">${p.text}</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-[9px] bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-bold uppercase tracking-widest">${p.status}</span>
+                        <button onclick="deletePost(${p.id})" class="text-gray-300 hover:text-red-500 transition"><i class="fa fa-trash-alt text-xs"></i></button>
+                    </div>
+                `;
+                feed.appendChild(card);
+            });
+        }
+
+        async function savePost() {
+            const text = document.getElementById('post-text').value;
+            const date = document.getElementById('post-date').value;
+            if (!text || !date) return alert("Заполните текст и дату!");
+            const { error } = await supabaseClient.from('posts').insert([{ text, publish_date: date, platform: 'vk', status: 'planned' }]);
+            if (!error) { closeModal(); fetchPosts(); }
+        }
+
+        async function deletePost(id) {
+            if (confirm('Удалить пост из очереди?')) {
+                await supabaseClient.from('posts').delete().eq('id', id);
+                fetchPosts();
+            }
+        }
+
+        function switchTab(t) {
+            document.getElementById('view-content').classList.toggle('hidden', t !== 'content');
+            document.getElementById('view-accounts').classList.toggle('hidden', t !== 'accounts');
+            document.getElementById('nav-content').classList.toggle('active-tab', t === 'content');
+            document.getElementById('nav-accounts').classList.toggle('active-tab', t === 'accounts');
+        }
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+    </script>
+</body>
+</html>
