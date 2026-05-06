@@ -2,159 +2,190 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>SMM Flow - FINAL FIX</title>
+    <title>SMM Flow - FINAL</title>
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval' https://*.vk.com https://unpkg.com; connect-src * 'unsafe-inline' https://*.vk.com https://*.supabase.co; frame-src * https://*.vk.com; img-src * data: blob:;">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Подключаем SDK ВК -->
+    <script src="https://unpkg.com/@vkid/sdk@2.1.0/dist-sdk/umd/index.js"></script>
     <script src="config.js"></script>
+    
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .active-tab { color: #2563eb !important; background-color: #eff6ff !important; border-right: 4px solid #2563eb; }
+        .active-tab { color: #2563eb !important; background-color: #eff6ff !important; border-right: 3px solid #2563eb; }
         .hidden { display: none !important; }
-        .card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800">
 
+    <!-- МЕНЮ -->
     <aside class="w-64 bg-white border-r flex flex-col z-50">
-        <div class="p-6 border-b flex items-center space-x-3 shadow-sm">
-            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="fa fa-paper-plane"></i></div>
-            <span class="font-bold text-lg">SMM Flow</span>
+        <div class="p-6 border-b flex items-center space-x-2">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                <i class="fa fa-paper-plane"></i>
+            </div>
+            <span class="font-bold text-xl">SMM Flow</span>
         </div>
         <nav class="flex-1 py-6 space-y-1">
-            <button onclick="switchTab('content')" id="btn-content" class="w-full flex items-center px-6 py-3 text-sm font-semibold active-tab transition-all">
-                <i class="fa fa-layer-group w-8"></i> Контент
+            <button onclick="switchTab('content')" id="btn-content" class="w-full flex items-center px-6 py-3 text-sm font-semibold active-tab">
+                <i class="fa fa-layer-group w-8"></i> Публикации
             </button>
-            <button onclick="switchTab('accounts')" id="btn-accounts" class="w-full flex items-center px-6 py-3 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-all">
+            <button onclick="switchTab('accounts')" id="btn-accounts" class="w-full flex items-center px-6 py-3 text-sm font-semibold text-slate-400">
                 <i class="fa fa-link w-8"></i> Аккаунты
             </button>
         </nav>
     </aside>
 
     <div class="flex-1 flex flex-col relative">
-        <header class="h-16 bg-white border-b flex items-center justify-between px-8">
-            <div id="status-text" class="text-[10px] font-bold text-blue-500 uppercase tracking-widest italic">Система готова ✅</div>
-            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-100 transition-all">
+        <header class="h-16 bg-white border-b flex items-center justify-between px-8 z-40">
+            <div id="status-text" class="text-[10px] font-bold text-blue-500 uppercase italic">Запуск...</div>
+            <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg">
                 + Создать пост
             </button>
         </header>
 
+        <!-- ЛЕНТА -->
         <main id="view-content" class="flex-1 p-8 overflow-y-auto">
-            <div id="post-feed" class="max-w-2xl mx-auto space-y-4 font-bold text-gray-400"></div>
+            <div id="post-feed" class="max-w-2xl mx-auto space-y-4"></div>
         </main>
 
+        <!-- АККАУНТЫ -->
         <main id="view-accounts" class="hidden flex-1 p-8 overflow-y-auto">
-            <div class="max-w-md mx-auto">
-                <div class="card p-10 text-center">
-                    <i class="fab fa-vk text-5xl text-blue-600 mb-4"></i>
-                    <h3 class="text-xl font-bold mb-4">ВКонтакте</h3>
-                    <div id="vk-info" class="text-sm text-slate-400 mb-8 italic">Нажмите кнопку для подключения</div>
+            <div class="max-w-md mx-auto bg-white p-10 rounded-[32px] border shadow-sm text-center">
+                <i class="fab fa-vk text-5xl text-blue-600 mb-6"></i>
+                <h3 class="text-xl font-bold mb-4">ВКонтакте</h3>
+                
+                <!-- МЕСТО ДЛЯ КНОПКИ ВК -->
+                <div id="vk-onetap-container" class="flex justify-center mb-6 min-h-[50px]"></div>
 
-                    <div id="vk-btn-wrap">
-                        <button onclick="smartVKLogin()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all">
-                            ПОДКЛЮЧИТЬ АККАУНТ
-                        </button>
-                    </div>
-
-                    <div id="group-select" class="hidden mt-6 p-6 bg-slate-50 rounded-2xl border border-dashed text-left animate-in slide-in-from-bottom-2">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-3">Выберите сообщество:</label>
-                        <select id="vk-group-list" class="w-full border-none bg-white p-3 rounded-xl shadow-sm outline-none mb-4 font-bold text-sm"></select>
-                        <button onclick="saveAcc()" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold shadow-lg">ПОДТВЕРДИТЬ</button>
-                    </div>
-
-                    <div id="active-acc" class="hidden mt-6 p-4 bg-green-50 text-green-700 rounded-xl border font-bold text-sm"></div>
+                <div id="group-select" class="hidden mt-6 bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-200 text-left">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 text-center">Выберите сообщество администратора:</p>
+                    <select id="vk-group-list" class="w-full border-none bg-white p-3 rounded-xl shadow-sm outline-none mb-4 text-sm font-bold"></select>
+                    <button onclick="saveGroup()" class="w-full bg-green-500 text-white py-4 rounded-2xl font-bold">ПОДТВЕРДИТЬ</button>
                 </div>
+
+                <div id="active-acc" class="hidden mt-6 p-4 bg-green-50 text-green-700 rounded-2xl border font-bold text-sm"></div>
             </div>
         </main>
     </div>
 
     <!-- Модалка -->
-    <div id="modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4 text-left">
+    <div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 text-left">
         <div class="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl">
             <h3 class="text-xl font-bold mb-4">Новый пост</h3>
-            <textarea id="post-text" class="w-full h-32 border border-slate-100 bg-slate-50 rounded-2xl p-4 mb-4 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ваш текст..."></textarea>
-            <input type="datetime-local" id="post-date" class="w-full border bg-gray-50 rounded-xl p-2 text-sm outline-none">
-            <div class="flex space-x-3 mt-4">
-                <button onclick="closeModal()" class="flex-1 bg-gray-100 py-3 rounded-2xl font-bold text-slate-400 uppercase text-xs">Отмена</button>
-                <button onclick="savePost()" class="flex-1 bg-blue-600 text-white py-3 rounded-2xl font-bold shadow-lg uppercase text-xs">Запланировать</button>
+            <textarea id="post-text" class="w-full h-32 border border-slate-100 bg-slate-50 rounded-2xl p-4 mb-4 outline-none" placeholder="Текст..."></textarea>
+            <input type="datetime-local" id="post-date" class="w-full border bg-gray-50 rounded-xl p-2 mb-6 outline-none">
+            <div class="flex space-x-3">
+                <button onclick="closeModal()" class="flex-1 bg-gray-100 py-3 rounded-2xl font-bold text-slate-400">ОТМЕНА</button>
+                <button onclick="savePost()" class="flex-1 bg-blue-600 text-white py-3 rounded-2xl font-bold shadow-lg">СОХРАНИТЬ</button>
             </div>
         </div>
     </div>
 
     <script>
         let sb;
-        let token = '';
+        let userToken = '';
 
         window.onload = async function() {
             if (typeof S_URL === 'undefined') return;
             sb = supabase.createClient(S_URL, S_KEY);
-            handleHash();
-            await checkAcc();
+            
+            await checkAccount();
             await fetchPosts();
+            
+            // Запуск ВК виджета
+            initVKWidget();
         };
 
-        // --- УМНЫЙ ВХОД ВК ---
-        function smartVKLogin() {
-            // КОД САМ ОПРЕДЕЛЯЕТ АДРЕС САЙТА
-            const currentUrl = window.location.origin + window.location.pathname;
-            
-            // Если ты увидишь Security Error, сравни адрес из этого алерта с ВК
-            console.log("Redirecting with URI:", currentUrl);
+        // --- ТОТ САМЫЙ ВИДЖЕТ ВК ---
+        function initVKWidget() {
+            if ('VKIDSDK' in window) {
+                const VKID = window.VKIDSDK;
+                VKID.Config.init({
+                    app: 54580882,
+                    redirectUrl: 'https://akaime11-beep.github.io/smmpalner/',
+                    responseMode: VKID.ConfigResponseMode.Callback,
+                    source: VKID.ConfigSource.LOWCODE,
+                    scope: 'groups,wall,offline', // Только нужные права
+                });
 
-            const url = `https://oauth.vk.com/authorize?client_id=${VK_APP_ID}&display=page&redirect_uri=${encodeURIComponent(currentUrl)}&scope=groups,wall,offline,admin&response_type=token&v=5.131`;
-            
-            window.location.href = url;
-        }
-
-        function handleHash() {
-            const h = window.location.hash;
-            if (h.includes('access_token')) {
-                const p = new URLSearchParams(h.replace('#', '?'));
-                token = p.get('access_token');
-                window.history.replaceState(null, null, window.location.pathname);
-                switchTab('accounts');
-                loadGroups();
+                const oneTap = new VKID.OneTap();
+                oneTap.render({
+                    container: document.getElementById('vk-onetap-container'),
+                    showAlternativeLogin: true
+                })
+                .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+                    // Используем токен напрямую из payload, если он там есть, 
+                    // или делаем классический редирект для получения токена
+                    if (payload.access_token) {
+                        userToken = payload.access_token;
+                        loadGroups();
+                    } else {
+                        // Если токена нет, значит ВК хочет редирект. 
+                        // Отправляем пользователя на классику, это сработает на 100%
+                        const redirect = 'https://akaime11-beep.github.io/smmpalner/';
+                        window.location.href = `https://oauth.vk.com/authorize?client_id=54580882&display=page&redirect_uri=${encodeURIComponent(redirect)}&scope=groups,wall,offline&response_type=token&v=5.131`;
+                    }
+                });
             }
         }
 
+        // Если в URL есть токен (вернулись после редиректа)
+        if (window.location.hash.includes('access_token')) {
+            const params = new URLSearchParams(window.location.hash.replace('#', '?'));
+            userToken = params.get('access_token');
+            window.history.replaceState(null, null, window.location.pathname);
+            // Ждем загрузки DOM и подгружаем группы
+            window.addEventListener('DOMContentLoaded', () => {
+                switchTab('accounts');
+                loadGroups();
+            });
+        }
+
         function loadGroups() {
-            document.getElementById('vk-info').innerText = "Загружаем группы... ⏳";
+            document.getElementById('vk-onetap-container').classList.add('hidden');
+            document.getElementById('status-text').innerText = "Загрузка групп... ⏳";
+            
             const script = document.createElement('script');
-            script.src = `https://api.vk.com/method/groups.get?extended=1&filter=admin&access_token=${token}&v=5.131&callback=vkIn`;
+            script.src = `https://api.vk.com/method/groups.get?extended=1&filter=admin&access_token=${userToken}&v=5.131&callback=vkIn`;
             document.body.appendChild(script);
         }
 
-        window.vkIn = (data) => {
+        window.vkIn = function(data) {
             const select = document.getElementById('vk-group-list');
-            if (data.response?.items?.length > 0) {
+            if (data.response && data.response.items.length > 0) {
                 select.innerHTML = '';
                 data.response.items.forEach(g => {
                     const o = document.createElement('option');
                     o.value = g.id; o.text = g.name; select.add(o);
                 });
                 document.getElementById('group-select').classList.remove('hidden');
-                document.getElementById('vk-btn-wrap').classList.add('hidden');
-            } else { alert("Админские группы не найдены. Создайте сообщество."); }
+                document.getElementById('status-text').innerText = "Выберите группу ✅";
+            } else {
+                alert("Группы не найдены. Вы точно администратор сообщества?");
+            }
         };
 
-        async function saveAcc() {
+        async function saveGroup() {
             const select = document.getElementById('vk-group-list');
             await sb.from('accounts').upsert({
-                platform: 'vk', access_token: token,
+                platform: 'vk', access_token: userToken,
                 account_name: select.options[select.selectedIndex].text,
                 external_id: '-' + select.value
             }, { onConflict: 'platform' });
             location.reload();
         }
 
-        async function checkAcc() {
+        async function checkAccount() {
             const { data } = await sb.from('accounts').select('*').eq('platform', 'vk').maybeSingle();
             if (data) {
                 document.getElementById('active-acc').classList.remove('hidden');
                 document.getElementById('active-acc').innerText = "✅ ПОДКЛЮЧЕНО: " + data.account_name;
-                document.getElementById('vk-btn-wrap').innerHTML = `<button onclick="smartVKLogin()" class="text-xs text-blue-500 font-bold hover:underline">СМЕНИТЬ АККАУНТ</button>`;
+                document.getElementById('vk-onetap-container').innerHTML = `<button onclick="location.reload()" class="text-xs text-blue-500 font-bold underline">ОТКЛЮЧИТЬ / СМЕНИТЬ</button>`;
             }
+            document.getElementById('status-text').innerText = "Система онлайн ✅";
         }
 
         // --- ОБЩИЕ ФУНКЦИИ ---
@@ -162,27 +193,34 @@
             const { data } = await sb.from('posts').select('*').order('publish_date', { ascending: false });
             const feed = document.getElementById('post-feed');
             if (!data) return;
-            feed.innerHTML = data.length ? '' : '<div class="text-center py-20 text-slate-300 font-bold italic text-sm">Здесь пока пусто...</div>';
+            feed.innerHTML = data.length ? '' : '<p class="text-center text-slate-300 mt-20 italic">Пока пусто</p>';
             data.forEach(p => {
                 const card = document.createElement('div');
                 card.className = "bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-left mb-4 relative";
-                card.innerHTML = `<div class="flex justify-between mb-2 text-[10px] font-bold text-blue-500 uppercase tracking-tighter">ВКонтакте <span class="text-slate-400 font-medium">${new Date(p.publish_date).toLocaleString()}</span></div><p class="text-sm font-medium text-slate-700 leading-relaxed">${p.text}</p><div class="mt-4 flex justify-between items-center"><span class="text-[9px] bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold uppercase tracking-widest">${p.status}</span><button onclick="del(${p.id})" class="text-slate-300 hover:text-red-500"><i class="fa fa-trash-alt text-xs"></i></button></div>`;
+                card.innerHTML = `<div class="flex justify-between mb-2 text-[10px] font-bold text-blue-500 uppercase">ВКонтакте <span>${new Date(p.publish_date).toLocaleString()}</span></div><p class="text-sm font-medium text-slate-700">${p.text}</p><div class="mt-4 flex justify-between items-center"><span class="text-[9px] bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold uppercase">${p.status}</span><button onclick="delPost(${p.id})" class="text-gray-300 hover:text-red-500 transition-all"><i class="fa fa-trash-alt text-xs"></i></button></div>`;
                 feed.appendChild(card);
             });
         }
+
         async function savePost() {
             const t = document.getElementById('post-text').value;
             const d = document.getElementById('post-date').value;
-            if (!t || !d) return alert("Заполни данные!");
+            if (!t || !d) return alert("Заполни всё!");
             await sb.from('posts').insert([{ text: t, publish_date: d, platform: 'vk', status: 'planned' }]);
             closeModal(); fetchPosts();
         }
-        async function del(id) { if (confirm('Удалить?')) { await sb.from('posts').delete().eq('id', id); fetchPosts(); } }
+
+        async function delPost(id) {
+            if (confirm('Удалить?')) { await sb.from('posts').delete().eq('id', id); fetchPosts(); }
+        }
+
         function switchTab(id) {
-            document.getElementById('view-content').classList.toggle('hidden', id !== 'content');
-            document.getElementById('view-accounts').classList.toggle('hidden', id !== 'accounts');
-            document.getElementById('btn-content').classList.toggle('active-tab', id === 'content');
-            document.getElementById('btn-accounts').classList.toggle('active-tab', id === 'accounts');
+            document.getElementById('view-content').classList.add('hidden');
+            document.getElementById('view-accounts').classList.add('hidden');
+            document.getElementById('btn-content').classList.remove('active-tab');
+            document.getElementById('btn-accounts').classList.remove('active-tab');
+            document.getElementById('view-' + id).classList.remove('hidden');
+            document.getElementById('btn-' + id).classList.add('active-tab');
         }
         function openModal() { document.getElementById('modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
