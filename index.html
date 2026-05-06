@@ -311,5 +311,103 @@
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
     </script>
+
+    // ... (начало кода остается тем же, меняем только блок скриптов) ...
+
+    <script>
+        let supabaseClient;
+        let tempToken = '';
+
+        window.onload = function() {
+            if (typeof S_URL === 'undefined') return;
+            supabaseClient = supabase.createClient(S_URL, S_KEY);
+            
+            handleAuthCallback();
+            checkExistingAccount();
+            fetchPosts();
+        };
+
+        function startVKAuth() {
+            // Берем текущий адрес БЕЗ хэша и БЕЗ лишних слэшей в конце
+            const redirectUri = window.location.origin + window.location.pathname.replace(/\/$/, "");
+            
+            // Если ты хочешь ПРОВЕРИТЬ адрес, раскомментируй строку ниже:
+            // alert("Адрес для настроек ВК: " + redirectUri); 
+
+            const scope = 'groups,wall,offline,admin';
+            const authUrl = `https://oauth.vk.com/authorize?client_id=${VK_APP_ID}&display=page&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=token&v=5.131`;
+            
+            window.location.href = authUrl;
+        }
+
+        async function handleAuthCallback() {
+            const hash = window.location.hash;
+            if (hash.includes('access_token')) {
+                const params = new URLSearchParams(hash.replace('#', '?'));
+                tempToken = params.get('access_token');
+                window.location.hash = '';
+                loadAdminGroups();
+            } else if (hash.includes('error')) {
+                alert("ВК вернул ошибку. Проверьте настройки Redirect URI.");
+            }
+        }
+
+        function loadAdminGroups() {
+            document.getElementById('vk-auth-section').classList.add('hidden');
+            document.getElementById('group-select-section').classList.remove('hidden');
+            
+            const script = document.createElement('script');
+            script.src = `https://api.vk.com/method/groups.get?extended=1&filter=admin&access_token=${tempToken}&v=5.131&callback=vkCallback`;
+            document.body.appendChild(script);
+        }
+
+        window.vkCallback = function(res) {
+            const select = document.getElementById('vk-group-list');
+            if (res.response && res.response.items) {
+                res.response.items.forEach(group => {
+                    const opt = document.createElement('option');
+                    opt.value = group.id;
+                    opt.text = group.name;
+                    select.add(opt);
+                });
+            } else if (res.error) {
+                alert("Ошибка ВК: " + res.error.error_msg);
+            }
+        };
+
+        async function saveSelectedGroup() {
+            const select = document.getElementById('vk-group-list');
+            const groupId = select.value;
+            const groupName = select.options[select.selectedIndex].text;
+
+            const { error } = await supabaseClient.from('accounts').upsert({
+                platform: 'vk',
+                access_token: tempToken,
+                account_name: groupName,
+                external_id: '-' + groupId
+            }, { onConflict: 'platform' });
+
+            if (!error) {
+                alert("Успешно привязано!");
+                location.reload();
+            } else {
+                alert("Ошибка БД (проверьте, создана ли таблица accounts): " + error.message);
+            }
+        }
+
+        async function checkExistingAccount() {
+            try {
+                const { data, error } = await supabaseClient.from('accounts').select('*').eq('platform', 'vk').maybeSingle();
+                if (data) {
+                    document.getElementById('account-status').innerHTML = `<div class="p-4 bg-green-50 text-green-700 rounded-xl border border-green-200 font-bold">✅ Активен: ${data.account_name}</div>`;
+                    document.getElementById('vk-auth-section').innerHTML = `<button onclick="startVKAuth()" class="w-full border border-blue-200 text-blue-600 py-2 rounded-xl text-sm mt-4">Сменить сообщество</button>`;
+                }
+            } catch (e) {
+                console.log("Таблица accounts еще не готова.");
+            }
+            document.getElementById('status-text').innerText = "Система онлайн ✅";
+        }
+
+        // ... (остальные функции switchTab, fetchPosts, savePost остаются без изменений) ...
 </body>
 </html>
