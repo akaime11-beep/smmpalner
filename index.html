@@ -2,136 +2,139 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>SMM Flow - Рабочая версия</title>
+    <title>SMM Flow</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob:; style-src * 'unsafe-inline';">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Подключаем библиотеку правильно -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- ПОДКЛЮЧАЕМ ТВОЙ ФАЙЛ С КЛЮЧАМИ -->
+    <script src="config.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; }
         .active-tab { color: #2563eb; background-color: #eff6ff; border-right: 3px solid #2563eb; }
         .hidden { display: none; }
     </style>
 </head>
-<body class="flex h-screen">
+<body class="flex h-screen overflow-hidden">
 
-    <!-- Меню слева -->
-    <aside class="w-64 bg-white border-r flex flex-col">
-        <div class="p-6 border-b font-bold text-xl text-blue-600 flex items-center">
-            <i class="fa fa-paper-plane mr-2"></i> SMM Flow
+    <aside class="w-64 bg-white border-r flex flex-col z-20">
+        <div class="p-6 flex items-center space-x-3 border-b">
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg"><i class="fa fa-paper-plane"></i></div>
+            <span class="font-bold text-lg">SMM Flow</span>
         </div>
         <nav class="flex-1 py-4">
-            <button onclick="switchTab('content')" class="w-full flex items-center px-6 py-3 text-sm active-tab" id="btn-content">
+            <button onclick="switchTab('content')" id="nav-content" class="w-full flex items-center px-6 py-3 text-sm font-medium transition active-tab">
                 <i class="fa fa-layer-group w-8"></i> Контент
             </button>
-            <button onclick="switchTab('accounts')" class="w-full flex items-center px-6 py-3 text-sm text-gray-500" id="btn-accounts">
+            <button onclick="switchTab('accounts')" id="nav-accounts" class="w-full flex items-center px-6 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 transition">
                 <i class="fa fa-link w-8"></i> Аккаунты
             </button>
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col relative">
         <header class="h-16 bg-white border-b flex items-center justify-between px-8">
-            <span class="text-gray-600 font-medium">Панель управления</span>
-            <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-blue-700 transition">
+            <div id="status-text" class="text-sm font-semibold text-gray-400 italic">Проверка конфигурации...</div>
+            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-md transition">
                 + Создать пост
             </button>
         </header>
 
-        <section id="view-content" class="p-8 overflow-y-auto">
-            <div id="post-feed" class="max-w-2xl mx-auto space-y-4">
-                <p class="text-center text-gray-400">Загрузка постов...</p>
+        <main id="view-content" class="flex-1 p-8 overflow-y-auto bg-gray-50">
+            <div id="post-feed" class="max-w-2xl mx-auto space-y-4 text-center text-gray-400 font-medium">
+                Загрузка ваших постов...
             </div>
-        </section>
+        </main>
 
-        <section id="view-accounts" class="hidden p-8">
-            <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl border">
-                <h2 class="font-bold mb-4">Подключенные сервисы</h2>
-                <div class="p-3 border rounded-lg mb-2">Telegram Bot: <span class="text-green-500 font-bold">АКТИВЕН</span></div>
-            </div>
-        </section>
-    </main>
+        <main id="view-accounts" class="hidden flex-1 p-8 text-center">
+             <div class="max-w-md mx-auto bg-white p-10 rounded-2xl border shadow-sm">
+                <i class="fab fa-telegram text-5xl text-blue-500 mb-4"></i>
+                <h2 class="text-xl font-bold">Telegram подключен</h2>
+                <p class="text-gray-400 mt-2 text-sm">Ваши посты будут уходить в канал автоматически через Make.com</p>
+             </div>
+        </main>
+    </div>
 
-    <!-- Модальное окно -->
-    <div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+    <!-- Модалка -->
+    <div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg p-8 shadow-2xl">
-            <h3 class="text-xl font-bold mb-6">Новый пост</h3>
-            <textarea id="post-text" class="w-full h-32 border border-gray-200 rounded-xl p-4 mb-4 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Текст поста..."></textarea>
-            
+            <h3 class="text-xl font-bold mb-6">Создать публикацию</h3>
+            <textarea id="post-text" class="w-full h-32 border border-gray-200 rounded-xl p-4 mb-4 outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="О чем хотите рассказать?"></textarea>
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">ДАТА</label>
-                    <input type="datetime-local" id="post-date" class="w-full border rounded-lg p-2 text-sm">
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Дата и время</label>
+                    <input type="datetime-local" id="post-date" class="w-full border rounded-lg p-2 text-sm outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">СОЦСЕТЬ</label>
-                    <select id="post-platform" class="w-full border rounded-lg p-2 text-sm">
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Соцсеть</label>
+                    <select id="post-platform" class="w-full border rounded-lg p-2 text-sm outline-none">
                         <option value="tg">Telegram</option>
                         <option value="vk">ВКонтакте</option>
                     </select>
                 </div>
             </div>
-
             <div class="flex space-x-3">
-                <button onclick="closeModal()" class="flex-1 bg-gray-100 py-3 rounded-xl font-bold">Отмена</button>
-                <button onclick="savePost()" id="save-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">Сохранить</button>
+                <button onclick="closeModal()" class="flex-1 bg-gray-100 py-3 rounded-xl font-bold hover:bg-gray-200 transition">Отмена</button>
+                <button onclick="savePost()" id="save-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Запланировать</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- ВСТАВЬ СВОИ ДАННЫЕ СЮДА ---
-        const SUPABASE_URL = 'https://wssmpxdsecqagfvetzqh.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indzc21weGRzZWNxYWdmdmV0enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNTEwMzMsImV4cCI6MjA5MzYyNzAzM30.1JTM3XGbkY6u2e4p-vLTZvhW-u36_4ryr5u_boI7Q80';
-        // -------------------------------
+        let supabaseClient;
 
-        // Инициализация клиента (исправлено название)
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        window.onload = function() {
+            // Проверяем, загрузились ли ключи из config.js
+            if (typeof S_URL === 'undefined' || typeof S_KEY === 'undefined') {
+                document.getElementById('status-text').innerText = "Ошибка: config.js не найден или пуст ❌";
+                return;
+            }
 
-        // Функция открытия модалки (теперь точно сработает)
-        function openModal() {
-            console.log("Открываю окно...");
-            document.getElementById('modal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('modal').classList.add('hidden');
-        }
+            try {
+                // Используем переменные S_URL и S_KEY из внешнего файла
+                supabaseClient = supabase.createClient(S_URL, S_KEY);
+                document.getElementById('status-text').innerText = "Система онлайн ✅";
+                fetchPosts();
+            } catch (e) {
+                document.getElementById('status-text').innerText = "Ошибка подключения к базе ❌";
+                console.error(e);
+            }
+        };
 
         function switchTab(tab) {
             document.getElementById('view-content').classList.toggle('hidden', tab !== 'content');
             document.getElementById('view-accounts').classList.toggle('hidden', tab !== 'accounts');
-            document.getElementById('btn-content').classList.toggle('active-tab', tab === 'content');
-            document.getElementById('btn-accounts').classList.toggle('active-tab', tab === 'accounts');
+            document.getElementById('nav-content').classList.toggle('active-tab', tab === 'content');
+            document.getElementById('nav-accounts').classList.toggle('active-tab', tab === 'accounts');
         }
 
-        async function fetchPosts() {
-            const { data, error } = await supabaseClient
-                .from('posts')
-                .select('*')
-                .order('publish_date', { ascending: false });
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
-            if (error) {
-                console.error("Ошибка загрузки:", error);
-                return;
-            }
-            renderPosts(data);
+        async function fetchPosts() {
+            const { data, error } = await supabaseClient.from('posts').select('*').order('publish_date', { ascending: false });
+            if (!error) renderPosts(data);
         }
 
         function renderPosts(posts) {
             const feed = document.getElementById('post-feed');
-            feed.innerHTML = posts.length ? '' : '<p class="text-center text-gray-400">Постов пока нет</p>';
-            
+            feed.innerHTML = posts.length ? '' : 'Постов пока нет...';
             posts.forEach(post => {
                 const card = document.createElement('div');
-                card.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm mb-4";
+                card.className = "bg-white p-5 rounded-xl border border-gray-100 shadow-sm text-left mb-4";
                 card.innerHTML = `
                     <div class="flex justify-between mb-2 text-[10px] font-bold uppercase">
-                        <span class="text-blue-500">${post.platform}</span>
+                        <span class="${post.platform === 'tg' ? 'text-blue-400' : 'text-blue-600'}">
+                            <i class="fab fa-${post.platform === 'tg' ? 'telegram' : 'vk'}"></i> ${post.platform}
+                        </span>
                         <span class="text-gray-400">${new Date(post.publish_date).toLocaleString()}</span>
                     </div>
-                    <p class="text-gray-700 text-sm">${post.text}</p>
-                    <div class="mt-3 text-[10px] text-orange-400 font-bold uppercase">Статус: ${post.status}</div>
+                    <p class="text-gray-700 text-sm leading-relaxed">${post.text}</p>
+                    <div class="mt-3 flex items-center">
+                        <span class="text-[9px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">${post.status}</span>
+                    </div>
                 `;
                 feed.appendChild(card);
             });
@@ -139,16 +142,32 @@
 
         async function savePost() {
             const btn = document.getElementById('save-btn');
-            const text = document.getElementById('post-text').value;
+            const txt = document.getElementById('post-text').value;
             const date = document.getElementById('post-date').value;
-            const platform = document.getElementById('post-platform').value;
+            const plat = document.getElementById('post-platform').value;
 
-            if (!text || !date) {
-                alert("Заполните текст и дату!");
-                return;
-            }
+            if (!txt || !date) return alert("Заполните текст и дату публикации!");
 
-            btn.innerText = 'Сохранение...';
+            btn.innerText = "Сохранение...";
             btn.disabled = true;
 
-            const { error } =
+            const { error } = await supabaseClient.from('posts').insert([{ 
+                text: txt, 
+                publish_date: date, 
+                platform: plat, 
+                status: 'planned' 
+            }]);
+
+            if (error) {
+                alert("Ошибка сохранения: " + error.message);
+            } else {
+                closeModal();
+                fetchPosts();
+                document.getElementById('post-text').value = '';
+            }
+            btn.innerText = "Запланировать";
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
