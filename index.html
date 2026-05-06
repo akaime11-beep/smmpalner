@@ -99,19 +99,18 @@
         };
 
        function startVKAuth() {
-    // ВНИМАНИЕ: Мы жестко прописываем адрес, который на 100% совпадает с настройкой в ВК
+    // ВАЖНО: Адрес должен быть ТЮТЕЛЬКА В ТЮТЕЛЬКУ как в настройках ВК (включая слэш)
     const redirectUri = 'https://akaime11-beep.github.io/smmpalner/'; 
     
-    // Формируем прямую ссылку OAuth
-    const authUrl = 'https://oauth.vk.com/authorize' +
-                    '?client_id=' + VK_APP_ID +
-                    '&display=page' +
-                    '&redirect_uri=' + encodeURIComponent(redirectUri) +
-                    '&scope=groups,wall,offline,admin' +
-                    '&response_type=token' +
-                    '&v=5.131';
+    const authUrl = 'https://oauth.vk.com/authorize?' + 
+        'client_id=' + VK_APP_ID + 
+        '&display=page' + 
+        '&redirect_uri=' + encodeURIComponent(redirectUri) + 
+        '&scope=groups,wall,offline,admin' + 
+        '&response_type=token' + 
+        '&v=5.131';
     
-    console.log("Пытаюсь авторизоваться через:", redirectUri);
+    console.log("Переход на авторизацию...");
     window.location.href = authUrl;
 }
 
