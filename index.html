@@ -98,11 +98,22 @@
             fetchPosts();
         };
 
-        function startVKAuth() {
-            const scope = 'groups,wall,offline,admin';
-            const authUrl = `https://oauth.vk.com/authorize?client_id=${VK_APP_ID}&display=page&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scope}&response_type=token&v=5.131`;
-            window.location.href = authUrl;
-        }
+       function startVKAuth() {
+    // ВНИМАНИЕ: Мы жестко прописываем адрес, который на 100% совпадает с настройкой в ВК
+    const redirectUri = 'https://akaime11-beep.github.io/smmpalner/'; 
+    
+    // Формируем прямую ссылку OAuth
+    const authUrl = 'https://oauth.vk.com/authorize' +
+                    '?client_id=' + VK_APP_ID +
+                    '&display=page' +
+                    '&redirect_uri=' + encodeURIComponent(redirectUri) +
+                    '&scope=groups,wall,offline,admin' +
+                    '&response_type=token' +
+                    '&v=5.131';
+    
+    console.log("Пытаюсь авторизоваться через:", redirectUri);
+    window.location.href = authUrl;
+}
 
         async function handleVKCallback() {
             const hash = window.location.hash;
