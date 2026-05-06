@@ -2,86 +2,84 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>SMM Flow - Управление</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval' https://*.vk.com https://unpkg.com; connect-src * 'unsafe-inline' https://*.vk.com https://*.supabase.co; frame-src * https://*.vk.com; img-src * data: blob:;">
-    
+    <title>SMM Flow - Контроль</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval' https://*.vk.com; connect-src * 'unsafe-inline' https://*.vk.com https://*.supabase.co; frame-src * https://*.vk.com; img-src * data: blob:;">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
     <script src="config.js"></script>
-    
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
         .active-tab { color: #2563eb !important; background-color: #eff6ff !important; border-right: 4px solid #2563eb; }
         .hidden { display: none !important; }
-        .card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; }
+        .card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden text-slate-800">
+<body class="flex h-screen overflow-hidden">
 
-    <!-- SIDEBAR -->
+    <!-- МЕНЮ -->
     <aside class="w-64 bg-white border-r flex flex-col z-50">
         <div class="p-6 border-b flex items-center space-x-3">
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="fa fa-paper-plane"></i></div>
-            <span class="font-bold text-xl tracking-tight">SMM Flow</span>
+            <span class="font-bold text-lg">SMM Flow</span>
         </div>
         <nav class="flex-1 py-6 space-y-1">
-            <button onclick="switchTab('content')" id="btn-content" class="w-full flex items-center px-6 py-3 text-sm font-semibold active-tab">
+            <button onclick="switchTab('content')" id="btn-content" class="w-full flex items-center px-6 py-3 text-sm font-semibold active-tab transition-all">
                 <i class="fa fa-layer-group w-8"></i> Публикации
             </button>
-            <button onclick="switchTab('accounts')" id="btn-accounts" class="w-full flex items-center px-6 py-3 text-sm font-semibold text-slate-400 hover:text-slate-600">
+            <button onclick="switchTab('accounts')" id="btn-accounts" class="w-full flex items-center px-6 py-3 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-all">
                 <i class="fa fa-link w-8"></i> Аккаунты
             </button>
         </nav>
     </aside>
 
-    <div class="flex-1 flex flex-col">
-        <header class="h-16 bg-white border-b flex items-center justify-between px-8">
-            <div id="status-text" class="text-[10px] font-bold text-blue-500 uppercase tracking-widest italic">Загрузка...</div>
-            <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-100">
+    <!-- КОНТЕНТ -->
+    <div class="flex-1 flex flex-col relative">
+        <header class="h-16 bg-white border-b flex items-center justify-between px-8 z-40">
+            <div id="status-text" class="text-[10px] font-bold text-blue-500 uppercase tracking-widest italic">Система онлайн ✅</div>
+            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-100 transition-all">
                 + Создать пост
             </button>
         </header>
 
         <main id="view-content" class="flex-1 p-8 overflow-y-auto">
-            <div id="post-feed" class="max-w-2xl mx-auto space-y-4"></div>
+            <div id="post-feed" class="max-w-2xl mx-auto space-y-4 font-bold text-gray-400"></div>
         </main>
 
         <main id="view-accounts" class="hidden flex-1 p-8 overflow-y-auto">
             <div class="max-w-md mx-auto">
-                <div class="card p-8 text-center" id="vk-card">
+                <div class="card p-8 text-center">
                     <i class="fab fa-vk text-5xl text-blue-600 mb-4"></i>
                     <h3 class="text-xl font-bold mb-2">ВКонтакте</h3>
-                    
-                    <!-- Статус подключения -->
-                    <div id="vk-connection-status" class="mb-6 text-sm text-slate-400 font-medium">Проверка...</div>
+                    <div id="vk-status-info" class="text-sm text-slate-400 mb-6 italic">Нажмите кнопку для подключения</div>
 
-                    <!-- Выбор группы -->
-                    <div id="group-select-section" class="hidden mt-4 p-5 bg-slate-50 rounded-2xl border border-dashed border-blue-200 text-left">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-3">Ваши сообщества (админ):</label>
-                        <select id="vk-group-list" class="w-full bg-white border p-3 rounded-xl shadow-sm outline-none mb-4 text-sm font-bold"></select>
-                        <button onclick="saveSelectedGroup()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg">Подключить выбранное</button>
+                    <div id="vk-actions">
+                        <button onclick="startVKAuth()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all">
+                            ПОДКЛЮЧИТЬ АККАУНТ
+                        </button>
                     </div>
 
-                    <!-- Кнопка отключения -->
-                    <div id="vk-logout-section" class="hidden mt-6">
-                        <button onclick="disconnectVK()" class="text-xs text-red-400 font-bold hover:text-red-600 transition underline">Отключить аккаунт</button>
+                    <div id="group-select-section" class="hidden mt-6 bg-slate-50 p-6 rounded-2xl border border-dashed border-blue-200 text-left">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-3">Ваши сообщества:</label>
+                        <select id="vk-group-list" class="w-full border-none bg-white p-3 rounded-xl shadow-sm outline-none mb-4 text-sm font-bold"></select>
+                        <button onclick="saveSelectedGroup()" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold">Подтвердить сообщество</button>
                     </div>
+
+                    <div id="vk-connected-info" class="hidden mt-6 p-4 bg-green-50 text-green-700 rounded-xl border border-green-100 font-bold text-sm"></div>
                 </div>
             </div>
         </main>
     </div>
 
     <!-- Модалка -->
-    <div id="modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+    <div id="modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4 text-left">
         <div class="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl">
-            <h3 class="text-xl font-bold mb-6 text-slate-800">Новый пост</h3>
-            <textarea id="post-text" class="w-full h-40 border border-slate-100 bg-slate-50 rounded-2xl p-5 mb-6 outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none" placeholder="О чем сегодня расскажем?"></textarea>
-            <input type="datetime-local" id="post-date" class="w-full border border-slate-100 bg-slate-50 rounded-xl p-3 mb-6 outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-            <div class="flex space-x-3">
-                <button onclick="closeModal()" class="flex-1 bg-gray-100 text-slate-500 py-4 rounded-2xl font-bold">ОТМЕНА</button>
-                <button onclick="savePost()" id="save-btn" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100">ЗАПЛАНИРОВАТЬ</button>
+            <h3 class="text-xl font-bold mb-4 font-bold">Новая публикация</h3>
+            <textarea id="post-text" class="w-full h-32 border border-slate-100 bg-slate-50 rounded-2xl p-4 mb-4 outline-none focus:ring-2 focus:ring-blue-500 transition resize-none" placeholder="О чем сегодня расскажем?"></textarea>
+            <input type="datetime-local" id="post-date" class="w-full border bg-gray-50 rounded-xl p-2 text-sm outline-none">
+            <div class="flex space-x-3 mt-4">
+                <button onclick="closeModal()" class="flex-1 bg-gray-100 py-3 rounded-2xl font-bold">Отмена</button>
+                <button onclick="savePost()" id="save-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-2xl font-bold shadow-lg">Запланировать</button>
             </div>
         </div>
     </div>
@@ -89,83 +87,46 @@
     <script>
         let supabaseClient;
         let tempToken = '';
-        let isAccountConnected = false;
 
         window.onload = async function() {
             if (typeof S_URL === 'undefined') return;
             supabaseClient = supabase.createClient(S_URL, S_KEY);
             
-            // 1. Проверяем, подключен ли уже кто-то
+            handleVKCallback();
             await checkAccountStatus();
-            
-            // 2. Показываем виджет ТОЛЬКО если не подключен
-            if (!isAccountConnected) {
-                initVKFloatingOneTap();
-            }
-
             await fetchPosts();
         };
 
-        async function checkAccountStatus() {
-            try {
-                const { data } = await supabaseClient.from('accounts').select('*').eq('platform', 'vk').maybeSingle();
-                const statusDiv = document.getElementById('vk-connection-status');
-                
-                if (data) {
-                    isAccountConnected = true;
-                    statusDiv.innerHTML = `<div class="bg-green-100 text-green-600 px-4 py-2 rounded-full font-bold text-xs inline-block">✅ ПОДКЛЮЧЕНО: ${data.account_name}</div>`;
-                    document.getElementById('vk-logout-section').classList.remove('hidden');
-                } else {
-                    isAccountConnected = false;
-                    statusDiv.innerText = "Аккаунт не подключен. Используйте OneTap для входа.";
-                }
-                document.getElementById('status-text').innerText = "Система онлайн ✅";
-            } catch(e) { console.error(e); }
+        function startVKAuth() {
+            // Идеально точный URL для ВК
+            const redirectUri = 'https://akaime11-beep.github.io/smmpalner/'; 
+            const authUrl = `https://oauth.vk.com/authorize?client_id=${VK_APP_ID}&display=page&redirect_uri=${encodeURIComponent(redirectUri)}&scope=groups,wall,offline,admin&response_type=token&v=5.131`;
+            window.location.href = authUrl;
         }
 
-        function initVKFloatingOneTap() {
-            if ('VKIDSDK' in window) {
-                const VKID = window.VKIDSDK;
-                VKID.Config.init({
-                    app: 54580882,
-                    redirectUrl: 'https://akaime11-beep.github.io/smmpalner/',
-                    responseMode: VKID.ConfigResponseMode.Callback,
-                    source: VKID.ConfigSource.LOWCODE,
-                    scope: 'groups,wall,offline', // ОБЯЗАТЕЛЬНЫЕ ПРАВА
-                });
-
-                const floatingOneTap = new VKID.FloatingOneTap();
-                floatingOneTap.render({ appName: 'SMM Flow', showAlternativeLogin: true })
-                .on(VKID.FloatingOneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-                    // Обмен кода на токен
-                    VKID.Auth.exchangeCode(payload.code, payload.device_id)
-                        .then(data => {
-                            tempToken = data.access_token;
-                            floatingOneTap.close();
-                            loadGroups();
-                        })
-                        .catch(err => alert("Ошибка при получении прав: " + JSON.stringify(err)));
-                });
+        function handleVKCallback() {
+            const hash = window.location.hash;
+            if (hash.includes('access_token')) {
+                const params = new URLSearchParams(hash.replace('#', '?'));
+                tempToken = params.get('access_token');
+                window.history.replaceState(null, null, window.location.pathname);
+                switchTab('accounts');
+                loadGroups();
             }
         }
 
         function loadGroups() {
-            switchTab('accounts');
-            document.getElementById('vk-connection-status').innerText = "Загружаем ваши группы... ⏳";
-            
-            // Используем JSONP для обхода CORS
+            document.getElementById('vk-status-info').innerText = "Загружаем группы... ⏳";
             const script = document.createElement('script');
-            script.src = `https://api.vk.com/method/groups.get?extended=1&filter=admin&access_token=${tempToken}&v=5.131&callback=vkCallback`;
+            script.src = `https://api.vk.com/method/groups.get?extended=1&filter=admin&access_token=${tempToken}&v=5.131&callback=vkRes`;
             document.body.appendChild(script);
         }
 
-        window.vkCallback = function(data) {
+        window.vkRes = function(data) {
             if (data.error) {
                 alert("Ошибка ВК: " + data.error.error_msg);
-                console.error(data.error);
                 return;
             }
-
             const select = document.getElementById('vk-group-list');
             if (data.response?.items?.length > 0) {
                 select.innerHTML = '';
@@ -173,11 +134,11 @@
                     const opt = document.createElement('option');
                     opt.value = g.id; opt.text = g.name; select.add(opt);
                 });
+                document.getElementById('vk-actions').classList.add('hidden');
                 document.getElementById('group-select-section').classList.remove('hidden');
-                document.getElementById('vk-connection-status').innerText = "Группы найдены! Выберите нужную:";
+                document.getElementById('vk-status-info').innerText = "Выберите группу из списка:";
             } else {
-                alert("ВК не вернул ни одной группы, где вы Администратор.");
-                document.getElementById('vk-connection-status').innerText = "Группы не найдены ❌";
+                alert("Сообщества не найдены. Убедитесь, что вы создали группу в ВК.");
             }
         };
 
@@ -188,27 +149,30 @@
                 account_name: select.options[select.selectedIndex].text,
                 external_id: '-' + select.value
             }, { onConflict: 'platform' });
-            
             if (!error) location.reload();
         }
 
-        async function disconnectVK() {
-            if (confirm("Вы уверены, что хотите отключить ВК?")) {
-                await supabaseClient.from('accounts').delete().eq('platform', 'vk');
-                location.reload();
-            }
+        async function checkAccountStatus() {
+            try {
+                const { data } = await supabaseClient.from('accounts').select('*').eq('platform', 'vk').maybeSingle();
+                if (data) {
+                    document.getElementById('vk-connected-info').classList.remove('hidden');
+                    document.getElementById('vk-connected-info').innerText = "✅ ПОДКЛЮЧЕНО: " + data.account_name;
+                    document.getElementById('vk-status-info').classList.add('hidden');
+                    document.getElementById('vk-actions').innerHTML = `<button onclick="startVKAuth()" class="text-xs text-blue-600 font-bold hover:underline">Сменить сообщество</button>`;
+                }
+            } catch(e) {}
         }
 
-        // --- БАЗОВЫЕ ФУНКЦИИ ---
         async function fetchPosts() {
             const { data } = await supabaseClient.from('posts').select('*').order('publish_date', { ascending: false });
             const feed = document.getElementById('post-feed');
             if (!data) return;
-            feed.innerHTML = data.length ? '' : '<div class="text-center py-20 text-slate-300 font-bold italic">Пока пусто</div>';
+            feed.innerHTML = data.length ? '' : '<div class="text-center py-20 text-slate-300 italic font-bold">Лента пуста</div>';
             data.forEach(p => {
                 const card = document.createElement('div');
-                card.className = "card p-6 text-left mb-4 shadow-sm";
-                card.innerHTML = `<div class="flex justify-between mb-2 text-[10px] font-bold uppercase text-blue-500">ВК <span class="text-slate-400">${new Date(p.publish_date).toLocaleString()}</span></div><p class="text-sm font-medium text-slate-700">${p.text}</p><div class="mt-4 flex justify-between items-center"><span class="text-[9px] bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold uppercase tracking-widest">${p.status}</span><button onclick="deletePost(${p.id})" class="text-slate-300 hover:text-red-500 transition-all"><i class="fa fa-trash-alt text-xs"></i></button></div>`;
+                card.className = "card p-6 text-left mb-4 relative shadow-sm";
+                card.innerHTML = `<div class="flex justify-between mb-2 text-[10px] font-bold uppercase text-blue-500">ВКонтакте <span class="text-slate-400 font-medium">${new Date(p.publish_date).toLocaleString()}</span></div><p class="text-slate-700 text-sm leading-relaxed">${p.text}</p><div class="mt-4 flex justify-between items-center"><span class="text-[9px] bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold uppercase tracking-widest">${p.status}</span><button onclick="deletePost(${p.id})" class="text-slate-300 hover:text-red-500 transition-all"><i class="fa fa-trash-alt text-xs"></i></button></div>`;
                 feed.appendChild(card);
             });
         }
